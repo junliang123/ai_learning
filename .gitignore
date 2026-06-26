@@ -1,23 +1,39 @@
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
 
-.ipynb_checkpoints/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-.venv/
+# virtual environments
 venv/
+.venv/
 env/
+~/venvs/
 
+# training outputs
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+checkpoints/
+runs/
+out/
+outputs/
+logs/
+wandb/
+
+# generated text
+more.txt
+generated.txt
+
+# cache
+.cache/
+*.log
+
+# VS Code local settings
+.vscode/
+
+# OS
 .DS_Store
 Thumbs.db
-
-*.Zone.Identifier
-*:Zone.Identifier
-
-.agents/
-.codex/
-
-/test.ipynb

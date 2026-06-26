@@ -1,0 +1,281 @@
+{
+  "metadata": {
+    "name": "Mini GPT 项目中文面试问答库",
+    "language": "zh-CN",
+    "project": "my_llm/gpt/mini_gpt.py",
+    "purpose": "用于面试辅助软件，围绕候选人从零实现 mini GPT 项目的中文问答知识库。",
+    "version": "2.0"
+  },
+  "qa": [
+    {
+      "id": "q001",
+      "tags": ["项目介绍", "开场"],
+      "question": "请介绍一下你的 mini GPT 项目。",
+      "answer": "我做了一个从零实现 mini GPT 的项目，目标是理解 GPT 的核心训练闭环和 decoder-only Transformer 结构。我没有一开始直接写完整 GPT，而是先用 Bigram 模型跑通数据读取、字符级 tokenizer、batch 采样、loss、反向传播、优化器和生成，然后逐步加入 token embedding、position embedding、causal self-attention、multi-head attention、feedforward、残差连接、LayerNorm、TransformerBlock、参数初始化和验证集评估。"
+    },
+    {
+      "id": "q002",
+      "tags": ["项目介绍", "亮点"],
+      "question": "这个项目最大的收获是什么？",
+      "answer": "最大的收获是我把 GPT 的核心组件拆开理解了，而不是只会调用接口。我能解释从文本到 token id、从 batch 到 logits、从 cross entropy 到 backward、从 attention mask 到自回归生成的完整流程，也能解释常见 bug，比如 ModuleList 不能直接调用、position embedding 越界、忘记 loss.backward、device mismatch 等。"
+    },
+    {
+      "id": "q003",
+      "tags": ["AI辅助", "诚信说明"],
+      "question": "这个项目中你是如何使用 AI 辅助的？",
+      "answer": "这个岗位允许 AI 辅助，所以我把 AI 当作学习和 code review 工具。我会先自己实现每个模块，比如 self-attention、multi-head、feedforward 和 block，然后让 AI 检查 shape、训练逻辑和常见错误。AI 主要帮我暴露盲点，但我不会让它直接替我完成整个项目，因为面试时我需要自己解释每个模块为什么这么写。"
+    },
+    {
+      "id": "q004",
+      "tags": ["学习方式", "视频复现"],
+      "question": "你这个项目是不是照着视频抄的？",
+      "answer": "我参考了 Karpathy 的 GPT from scratch 思路，但我不是直接抄完整代码。我按模块逐步复现：先 Bigram 跑通训练闭环，再逐步加入 embedding、attention、multi-head、feedforward、block 和完整 GPT。每一步我都会单独检查 tensor shape、loss 是否下降和生成是否能跑。"
+    },
+    {
+      "id": "q005",
+      "tags": ["整体流程", "forward"],
+      "question": "从输入 token 开始，讲一遍 GPT 的前向传播流程。",
+      "answer": "输入是 idx，形状是 (B, T)。模型先查 token embedding 得到 (B, T, n_embd)，再查 position embedding 得到 (T, n_embd)，二者相加得到 x。然后 x 经过多层 TransformerBlock，每个 block 包含 LayerNorm、causal multi-head self-attention、残差连接、FeedForward 和残差连接。最后做 final LayerNorm，通过 lm_head 映射到 vocab_size，得到 logits，形状是 (B, T, vocab_size)。训练时再和 targets 计算 cross entropy loss。"
+    },
+    {
+      "id": "q006",
+      "tags": ["tokenizer", "字符级"],
+      "question": "你现在用的 tokenizer 是什么？",
+      "answer": "我现在用的是字符级 tokenizer。它会统计训练文本中出现过的所有不同字符，然后建立字符到整数 id、整数 id 到字符的映射。这个实现很适合学习，因为简单透明，但它不是生产 GPT 的主流做法。"
+    },
+    {
+      "id": "q007",
+      "tags": ["tokenizer", "字符级", "subword"],
+      "question": "字符级 tokenizer 和真实 GPT 的 tokenizer 有什么区别？",
+      "answer": "字符级 tokenizer 每个字符一个 token，词表小但序列很长。真实 GPT 通常用 subword 或 byte-level BPE tokenizer，词表更大，但文本会被压缩成更短的 token 序列，训练和推理更高效，也更适合大规模语言建模。"
+    },
+    {
+      "id": "q008",
+      "tags": ["tokenizer", "BPE"],
+      "question": "BPE 的核心思想是什么？",
+      "answer": "BPE 的核心思想是从小单位开始，比如字符或字节，然后反复统计最常见的相邻 pair，并把高频 pair 合并成新的 token。这样常见词或词片段会变成更短的 token 序列，同时罕见词也可以拆成更小单位处理。"
+    },
+    {
+      "id": "q009",
+      "tags": ["tokenizer", "byte-level"],
+      "question": "什么是 byte-level BPE？",
+      "answer": "byte-level BPE 是以字节作为基础单位的 BPE tokenizer。它的好处是几乎可以覆盖任意 Unicode 文本，不容易出现 unknown token，同时又能通过 BPE 合并提高压缩效率。现代 GPT 类模型常用类似思路。"
+    },
+    {
+      "id": "q010",
+      "tags": ["数据", "batch"],
+      "question": "batch 采样里 x 和 y 是什么关系？",
+      "answer": "x 是从某个随机位置开始取 block_size 个 token，y 是从下一个位置开始取 block_size 个 token。也就是说 y 是 x 整体右移一位。模型在每个位置根据当前及之前的 token 来预测 y 中对应位置的下一个 token。"
+    },
+    {
+      "id": "q011",
+      "tags": ["数据", "采样"],
+      "question": "为什么采样起点不会导致 y 越界？",
+      "answer": "因为 torch.randint 的上界是不包含的。如果上界是 len(data) - block_size，最大起点是 len(data) - block_size - 1，此时 y 的切片右边界正好是 len(data)。Python 切片右边界不包含，所以不会访问越界。"
+    },
+    {
+      "id": "q012",
+      "tags": ["Bigram", "baseline"],
+      "question": "为什么先实现 Bigram 模型？",
+      "answer": "Bigram 模型很弱，但它能快速验证训练闭环是否正确。它可以检查 tokenizer、batch、loss、backward、optimizer 和 generate 是否都能跑通。如果这个最简单模型都跑不通，直接写 Transformer 会很难 debug。"
+    },
+    {
+      "id": "q013",
+      "tags": ["Bigram", "局限"],
+      "question": "Bigram 模型为什么效果差？",
+      "answer": "Bigram 只根据当前 token 预测下一个 token，不真正读取更早的上下文。同一个字符在不同语境下可能有不同后续，但 Bigram 只能给出一个固定的 next-token 分布，所以表达能力很弱。"
+    },
+    {
+      "id": "q014",
+      "tags": ["shape", "loss"],
+      "question": "为什么计算 cross entropy 前要 reshape logits？",
+      "answer": "模型输出 logits 的形状是 (B, T, vocab_size)，targets 是 (B, T)。cross entropy 常用输入是 (N, C) 和 (N)，所以我把 B 和 T 合并，变成 logits: (B*T, vocab_size)，targets: (B*T)。这表示把每个 batch 的每个时间位置都当成一个分类样本。"
+    },
+    {
+      "id": "q015",
+      "tags": ["embedding", "position"],
+      "question": "token embedding 和 position embedding 分别有什么作用？",
+      "answer": "token embedding 表示 token 是什么，把 id 映射成向量；position embedding 表示 token 在序列中的位置。二者相加后，模型既知道当前 token 内容，也知道它在上下文中的位置。"
+    },
+    {
+      "id": "q016",
+      "tags": ["position", "生成"],
+      "question": "为什么 generate 时要裁剪到最后 block_size 个 token？",
+      "answer": "因为 position embedding 只支持 0 到 block_size-1 的位置。如果生成时把越来越长的完整序列都送进去，位置编号会越界。另外 GPT 本身也有固定上下文窗口，attention 计算会随序列长度平方增长，所以生成时只保留最近 block_size 个 token。"
+    },
+    {
+      "id": "q017",
+      "tags": ["attention", "QKV"],
+      "question": "Self-Attention 里的 Q、K、V 怎么理解？",
+      "answer": "Query 可以理解成当前位置想找什么信息，Key 是每个位置提供的匹配标签，Value 是真正被读取的内容。q 和 k 做点积得到注意力分数，softmax 后作为权重，再加权聚合 v。"
+    },
+    {
+      "id": "q018",
+      "tags": ["attention", "mask"],
+      "question": "为什么 GPT 需要 causal mask？",
+      "answer": "因为语言模型训练是根据当前位置及之前的 token 预测下一个 token。如果 attention 可以看到未来 token，就相当于作弊。causal mask 会把未来位置的 attention score 设成负无穷，softmax 后未来位置权重变成 0。"
+    },
+    {
+      "id": "q019",
+      "tags": ["attention", "缩放"],
+      "question": "attention score 为什么要乘 head_size ** -0.5？",
+      "answer": "q 和 k 的点积会随着维度变大而数值变大，softmax 可能变得过于尖锐，训练不稳定。乘以 head_size 的平方根倒数可以稳定 attention score 的尺度，这是 scaled dot-product attention 的标准做法。"
+    },
+    {
+      "id": "q020",
+      "tags": ["attention", "multi-head"],
+      "question": "Multi-Head Attention 是什么？",
+      "answer": "Multi-Head Attention 是多个 self-attention head 并行处理同一个输入。每个 head 可以学习不同的上下文关系，最后把各个 head 的输出在最后一维拼接，再通过线性层投影回 n_embd。"
+    },
+    {
+      "id": "q021",
+      "tags": ["attention", "multi-head", "shape"],
+      "question": "n_embd 和 n_head 有什么关系？",
+      "answer": "通常要求 n_embd 能被 n_head 整除，因为每个 head 的维度是 head_size = n_embd // n_head。多个 head 的输出拼接后维度是 n_head * head_size，应该回到 n_embd。"
+    },
+    {
+      "id": "q022",
+      "tags": ["buffer", "mask"],
+      "question": "为什么 causal mask 要用 register_buffer？",
+      "answer": "mask 不是可训练参数，但它要随着模型保存、加载，并且在 model.to(device) 时移动到同一个设备。register_buffer 适合注册这种固定 tensor。"
+    },
+    {
+      "id": "q023",
+      "tags": ["FeedForward", "MLP"],
+      "question": "FeedForward 在 Transformer 里有什么作用？",
+      "answer": "Attention 负责不同 token 之间的信息交流，FeedForward 负责每个位置内部的非线性加工。它通常是 Linear(n_embd, 4*n_embd)、ReLU、Linear(4*n_embd, n_embd)、Dropout。"
+    },
+    {
+      "id": "q024",
+      "tags": ["TransformerBlock", "结构"],
+      "question": "TransformerBlock 的结构是什么？",
+      "answer": "我实现的是 GPT 风格的 pre-norm block：先 x = x + MultiHeadAttention(LayerNorm(x))，再 x = x + FeedForward(LayerNorm(x))。它包含 LayerNorm、causal multi-head self-attention、feedforward 和残差连接。"
+    },
+    {
+      "id": "q025",
+      "tags": ["残差连接"],
+      "question": "残差连接里的加号是什么意思？",
+      "answer": "加号是把子层输出作为一个更新量加回原始 x。这样模型不是完全重写表示，而是在原来的表示上补充信息。残差连接可以保留原始信息，也让梯度更容易传播。"
+    },
+    {
+      "id": "q026",
+      "tags": ["LayerNorm", "pre-norm"],
+      "question": "为什么 LayerNorm 放在 attention 和 feedforward 前面？",
+      "answer": "这是 pre-norm Transformer 的写法。先 LayerNorm 再进入 attention 或 MLP，通常训练更稳定，尤其是层数较深时。LayerNorm 会稳定每个 token 的 hidden vector 分布。"
+    },
+    {
+      "id": "q027",
+      "tags": ["训练", "反向传播"],
+      "question": "训练一步具体发生了什么？",
+      "answer": "先采样 xb 和 yb，模型 forward 得到 logits 和 loss。然后 optimizer.zero_grad 清空旧梯度，loss.backward 沿计算图反向传播并把梯度存到每个参数的 grad 里，最后 optimizer.step 根据梯度更新参数。"
+    },
+    {
+      "id": "q028",
+      "tags": ["训练", "zero_grad"],
+      "question": "为什么每一步都要 zero_grad？",
+      "answer": "因为 PyTorch 默认会累加梯度。如果不清空上一轮梯度，新梯度会和旧梯度混在一起，导致更新方向不正确。所以每轮 backward 前要 zero_grad。"
+    },
+    {
+      "id": "q029",
+      "tags": ["优化器", "AdamW"],
+      "question": "为什么使用 AdamW？",
+      "answer": "AdamW 是 Transformer 训练里很常见的优化器。它结合了自适应学习率、动量信息，并且把 weight decay 解耦，通常比朴素 SGD 更稳定、更容易训练。"
+    },
+    {
+      "id": "q030",
+      "tags": ["评估", "eval", "no_grad"],
+      "question": "model.eval() 和 torch.no_grad() 有什么区别？",
+      "answer": "model.eval() 是切换模型模式，比如关闭 dropout；torch.no_grad() 是关闭梯度计算图构建，节省内存和时间。eval 不等于 no_grad，评估时通常两个都要用。"
+    },
+    {
+      "id": "q031",
+      "tags": ["生成", "autoregressive"],
+      "question": "generate 的自回归流程是什么？",
+      "answer": "从初始 context 开始，每一步裁剪到最后 block_size 个 token，forward 得到 logits，取最后一个时间步 logits[:, -1, :]，softmax 成概率，multinomial 采样下一个 token，然后拼接回 context，重复这个过程。"
+    },
+    {
+      "id": "q032",
+      "tags": ["生成", "logits"],
+      "question": "为什么生成时只取 logits 的最后一个时间步？",
+      "answer": "因为每一步生成只需要预测当前上下文之后的下一个 token。模型虽然会对所有位置输出 logits，但最后一个位置才对应当前完整上下文后的 next token。"
+    },
+    {
+      "id": "q033",
+      "tags": ["参数初始化"],
+      "question": "你做了什么参数初始化？",
+      "answer": "我对 Linear 和 Embedding 的 weight 使用均值 0、标准差 0.02 的正态分布初始化；如果 Linear 有 bias，就初始化为 0。这是 GPT 类模型常见的初始化方式，可以让训练更稳定。"
+    },
+    {
+      "id": "q034",
+      "tags": ["debug", "ModuleList"],
+      "question": "ModuleList 和 Sequential 有什么区别？",
+      "answer": "ModuleList 只是保存子模块，不自带 forward，所以不能直接 self.blocks(x)。如果用 ModuleList，需要在 forward 里 for block in self.blocks 手动调用。Sequential 则可以按顺序自动执行。"
+    },
+    {
+      "id": "q035",
+      "tags": ["debug", "device"],
+      "question": "device mismatch 怎么避免？",
+      "answer": "要保证模型、训练 batch 和生成 context 都在同一个 device。也就是 model.to(device)，x 和 y 用 to(device)，创建 context 时也加 device=device。"
+    },
+    {
+      "id": "q036",
+      "tags": ["debug", "position embedding"],
+      "question": "position embedding 越界通常是什么原因？",
+      "answer": "常见原因是生成时输入序列长度超过 block_size，但 position embedding 只支持 0 到 block_size-1。解决方式是在 generate 里每次 forward 前只取 idx 的最后 block_size 个 token。"
+    },
+    {
+      "id": "q037",
+      "tags": ["debug", "loss"],
+      "question": "如果 loss 不下降，你会怎么排查？",
+      "answer": "我会检查是否调用了 loss.backward，optimizer 是否拿到 model.parameters，learning_rate 是否合理，batch 的 y 是否相对 x 右移一位，cross entropy shape 是否正确，模型和数据是否在同一 device，以及 blocks 是否真的接入 forward。"
+    },
+    {
+      "id": "q038",
+      "tags": ["效果", "局限"],
+      "question": "为什么你现在生成效果不一定好？",
+      "answer": "因为这是一个很小的字符级模型，训练数据、参数规模、训练步数都有限。本地 CPU 调试时我更关注结构正确和 loss 能下降，不追求生成质量。要提升效果需要更大的模型、更长训练、更好的 tokenizer 和更多数据。"
+    },
+    {
+      "id": "q039",
+      "tags": ["真实GPT", "差距"],
+      "question": "这个 mini GPT 和真实 GPT 有哪些差距？",
+      "answer": "主要差距有：真实 GPT 使用 subword 或 byte-level tokenizer，模型参数量和数据规模大得多，训练用分布式 GPU/TPU，并且有学习率调度、混合精度、checkpoint、KV cache、指令微调和安全对齐等工程。我的项目主要是复现核心 decoder-only Transformer 训练闭环。"
+    },
+    {
+      "id": "q040",
+      "tags": ["KV Cache", "推理优化"],
+      "question": "你实现 KV cache 了吗？它有什么作用？",
+      "answer": "我当前没有实现 KV cache。现在 generate 每一步都会重新计算最近 block_size 个 token 的上下文。KV cache 会缓存历史 token 的 key 和 value，新 token 只需要计算自己的部分，从而减少重复计算，是生产级自回归推理的重要优化。"
+    },
+    {
+      "id": "q041",
+      "tags": ["CPU", "GPU", "参数"],
+      "question": "CPU 调试和 GPU 训练的参数怎么选？",
+      "answer": "CPU 本地调试我会用小参数，比如 batch_size 8、block_size 32、n_embd 48、n_head 4、n_layer 2、eval_iters 10。GPU VM 上可以放大，比如 batch_size 32、block_size 128、n_embd 180、n_head 6、n_layer 4。因为 attention 计算随 block_size 平方增长，所以 CPU 上不能盲目加大。"
+    },
+    {
+      "id": "q042",
+      "tags": ["复杂度", "attention"],
+      "question": "block_size 变大会带来什么影响？",
+      "answer": "block_size 变大能让模型看到更长上下文，但 self-attention 的计算和内存大致随 T 的平方增长，所以训练会明显变慢，也更吃显存。"
+    },
+    {
+      "id": "q043",
+      "tags": ["过拟合", "loss"],
+      "question": "train loss 和 val loss 怎么看？",
+      "answer": "train loss 反映训练集拟合情况，val loss 反映未参与训练数据上的泛化能力。如果 train loss 明显低于 val loss，可能过拟合；如果两个都很高，可能模型太小、训练不足或学习率不合适。"
+    },
+    {
+      "id": "q044",
+      "tags": ["架构", "decoder-only"],
+      "question": "这个模型是 encoder-decoder Transformer 吗？",
+      "answer": "不是。它是 decoder-only Transformer，也就是 GPT 风格结构。它只用 causal self-attention 做 next-token prediction，不包含原始 Transformer 里的 encoder-decoder cross-attention。"
+    },
+    {
+      "id": "q045",
+      "tags": ["收尾", "总结"],
+      "question": "用一句话总结这个项目。",
+      "answer": "这个项目让我从底层实现并理解了 GPT 的核心机制：从字符级 tokenizer 和 Bigram baseline 开始，逐步构建出包含 causal multi-head self-attention、FeedForward、残差连接、LayerNorm、AdamW 训练和自回归生成的小型 decoder-only Transformer。"
+    }
+  ]
+}

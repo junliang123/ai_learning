@@ -41,3 +41,6 @@ Thumbs.db
 HerbsClassification/data/raw
 
 CIFAR-10/data/cifar-10-python.tar.gz
+
+HelmetDetection/data
+HelmetDetection/yolo_dataset

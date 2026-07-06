@@ -31,6 +31,6 @@ class CarSegmentationDataset(Dataset):
 
         image = self.transform(image)
         mask = mask.resize(self.size, resample=Image.NEAREST)
-        mask = transforms.ToTensor(mask)
+        mask = transforms.ToTensor()(mask)
         mask = (mask > 0).float()
         return image, mask

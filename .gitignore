@@ -46,3 +46,9 @@ HelmetDetection/data
 HelmetDetection/yolo_dataset
 
 CarSegmentation/data
+
+ddpm/outputs
+
+ddpm/lora/*
+!ddpm/lora/train_lora.py
+!ddpm/lora/infer_lora.py

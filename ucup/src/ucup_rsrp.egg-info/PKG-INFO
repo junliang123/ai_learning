@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: ucup-rsrp
+Version: 0.1.0
+Summary: Physics-informed RSRP prediction for the 2026 UCup Summer Challenge
+Requires-Python: >=3.12
+Requires-Dist: lightgbm<5,>=4.6
+Requires-Dist: matplotlib<4,>=3.10
+Requires-Dist: numpy<3,>=2.2
+Requires-Dist: pandas<3,>=2.2
+Requires-Dist: scikit-learn<2,>=1.6
+Requires-Dist: scipy<2,>=1.15
+Provides-Extra: dev
+Requires-Dist: pytest<9,>=8.3; extra == "dev"
+Requires-Dist: ruff<1,>=0.11; extra == "dev"
